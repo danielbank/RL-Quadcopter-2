@@ -26,6 +26,7 @@ class Task():
 
         # Goal
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 15.])
+        self.close_enough_distance = 5
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
@@ -33,9 +34,13 @@ class Task():
         cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
         quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
         radius_penalty = quadcopter_radius - cone_radius
+        offset = 1.
+        distance_from_target = (((self.sim.pose[:3] ** 2 - self.target_pos ** 2)).sum()) ** 0.5
+        if distance_from_target < self.close_enough_distance:
+            offset = 1000
         if radius_penalty < 0:
             radius_penalty = 0
-        reward = 1. + 0.8*height_percentage - 0.2*radius_penalty
+        reward = 0.8*height_percentage - 0.2*radius_penalty + offset
         return reward
 
     def step(self, rotor_speeds):
@@ -47,6 +52,9 @@ class Task():
             reward += self.get_reward()
             pose_all.append(self.sim.pose)
         next_state = np.concatenate(pose_all)
+        distance_from_target = (((self.sim.pose[:3] ** 2 - self.target_pos ** 2)).sum()) ** 0.5
+        if distance_from_target < self.close_enough_distance:
+            done = True
         return next_state, reward, done
 
     def reset(self):
