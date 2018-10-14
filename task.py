@@ -1,4 +1,5 @@
 import numpy as np
+from math import floor
 from physics_sim import PhysicsSim
 
 class Task():
@@ -24,11 +25,21 @@ class Task():
         self.action_size = 4
 
         # Goal
-        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.]) 
+        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 15.]) 
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
-        reward = 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+        height = self.sim.pose[2]
+        cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
+        quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
+        radius_penalty = quadcopter_radius - cone_radius
+        if radius_penalty < 0:
+            radius_penalty = 0
+        upward_velocity_bonus = 0 //self.sim.v[2]
+#         if level > 10:
+#             upward_velocity_bonus = 0
+#         print(height, radius_penalty)
+        reward = height - radius_penalty + upward_velocity_bonus
         return reward
 
     def step(self, rotor_speeds):
