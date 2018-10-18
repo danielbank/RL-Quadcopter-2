@@ -19,27 +19,27 @@ class Task():
         self.sim = PhysicsSim(init_pose, init_velocities, init_angle_velocities, runtime) 
         self.action_repeat = 3
 
+        self.initial_height = init_pose[2] if isinstance(init_pose, list) else 0.
         self.state_size = self.action_repeat * 6
         self.action_low = 0
         self.action_high = 900
         self.action_size = 4
+        self.timeout_penalty = -100.
+        self.height_scale = 2.
+        self.target_height_scale = 2.
 
         # Goal
-        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 15.]) 
+        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 50.]) 
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
         height = self.sim.pose[2]
-        cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
-        quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
-        radius_penalty = quadcopter_radius - cone_radius
-        if radius_penalty < 0:
-            radius_penalty = 0
-        upward_velocity_bonus = 0 //self.sim.v[2]
-#         if level > 10:
-#             upward_velocity_bonus = 0
-#         print(height, radius_penalty)
-        reward = height - radius_penalty + upward_velocity_bonus
+        reward = self.height_scale ** (height - self.initial_height)
+#         cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
+#         quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
+#         radius_penalty = quadcopter_radius - cone_radius
+#         if radius_penalty < 0:
+#             radius_penalty = 0
         return reward
 
     def step(self, rotor_speeds):
@@ -50,6 +50,11 @@ class Task():
             done = self.sim.next_timestep(rotor_speeds) # update the sim pose and velocities
             reward += self.get_reward() 
             pose_all.append(self.sim.pose)
+        if done:
+            reward += self.timeout_penalty
+        else:
+            if self.sim.pose[2] > self.target_height_scale * self.target_pos[2]:
+                done = True
         next_state = np.concatenate(pose_all)
         return next_state, reward, done
 

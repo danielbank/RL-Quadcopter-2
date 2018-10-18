@@ -32,13 +32,13 @@ class Agent():
         self.noise = OUNoise(self.action_size, self.exploration_mu, self.exploration_theta, self.exploration_sigma)
 
         # Replay memory
-        self.buffer_size = 100000
-        self.batch_size = 128
+        self.buffer_size = 1000
+        self.batch_size = 32
         self.memory = ReplayBuffer(self.buffer_size, self.batch_size)
 
         # Algorithm parameters
         self.gamma = 0.9  # discount factor
-        self.tau = 0.9  # for soft update of target parameters
+        self.tau = 0.01  # for soft update of target parameters
 
     def reset_episode(self):
         self.noise.reset()
