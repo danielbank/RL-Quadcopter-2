@@ -25,24 +25,25 @@ class Task():
 
         # Goals, Rewards, Penalties
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 15.])
-        self.close_enough_distance = 3.
-        self.below_zero_penalty = 0.
-        self.close_enough_bonus = 10.
+        self.close_enough_distance = 5.
+        self.below_zero_penalty = -20.
+        self.close_enough_bonus = 1000.
+        self.timeout_penalty = -10
         self.base_reward = 1.
-        self.height_reward = 10.
+        self.height_reward = 1.
         self.radius_penalty = -10.
         self.cone_sharpness = 1.
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
-        height_percentage = self.sim.pose[2] / self.target_pos[2]
+#         height_percentage = self.sim.pose[2] / self.target_pos[2]
         cone_radius = (self.target_pos[2] - self.sim.pose[2]) / self.cone_sharpness
         quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5      
         radius_penalty_percentage = (quadcopter_radius - cone_radius) / cone_radius
         if radius_penalty_percentage < 0:
             radius_penalty_percentage = 0
         reward = self.base_reward
-        reward += self.height_reward * height_percentage
+        reward += self.height_reward * self.sim.pose[2]
         reward += self.radius_penalty * radius_penalty_percentage
         return reward
 
@@ -55,14 +56,16 @@ class Task():
             reward += self.get_reward()
             pose_all.append(self.sim.pose)
         next_state = np.concatenate(pose_all)
-        if self.sim.pose[2] <= 0.:
-            reward += self.below_zero_penalty
+        distance_from_target = abs(self.sim.pose[:3] - self.target_pos).sum()
+        if distance_from_target < self.close_enough_distance:
+            reward += self.close_enough_bonus
             done = True
         else:
-            distance_from_target = abs(self.sim.pose[:3] - self.target_pos).sum()
-            if distance_from_target < self.close_enough_distance:
-                reward += self.close_enough_bonus
-                done = True
+            if done:
+                if self.sim.pose[2] <= 0.:
+                    reward += self.below_zero_penalty
+                else:
+                    reward += self.timeout_penalty
         return next_state, reward, done
 
     def reset(self):
