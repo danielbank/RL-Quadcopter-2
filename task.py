@@ -27,6 +27,8 @@ class Task():
         self.timeout_penalty = -100.
         self.height_scale = 2.
         self.target_height_scale = 2.
+        self.cone_steepness = 1
+        self.stray_away_scale = 2.
 
         # Goal
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 50.]) 
@@ -36,11 +38,11 @@ class Task():
         height = self.sim.pose[2]
         reward = self.height_scale ** (height - self.initial_height)
         reward = 10000000 if reward > 10000000 else reward
-#         cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
-#         quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
-#         radius_penalty = quadcopter_radius - cone_radius
-#         if radius_penalty < 0:
-#             radius_penalty = 0
+        cone_radius = (self.target_pos[2] - self.sim.pose[2]) / self.cone_steepness
+        quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
+        stray_away_distance = (quadcopter_radius - cone_radius)
+        if stray_away_distance > 0:
+            reward -= self.stray_away_scale ** stray_away_distance
         return reward
 
     def step(self, rotor_speeds):
