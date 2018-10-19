@@ -35,6 +35,7 @@ class Task():
         """Uses current pose of sim to return reward."""
         height = self.sim.pose[2]
         reward = self.height_scale ** (height - self.initial_height)
+        reward = 10000000 if reward > 10000000 else reward
 #         cone_radius = (self.target_pos[2] - self.sim.pose[2]) / 10.
 #         quadcopter_radius = (self.sim.pose[0] ** 2 + self.sim.pose[1] ** 2) ** 0.5
 #         radius_penalty = quadcopter_radius - cone_radius
