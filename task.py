@@ -43,6 +43,7 @@ class Task():
         stray_away_distance = (quadcopter_radius - cone_radius)
         if stray_away_distance > 0:
             reward -= self.stray_away_scale ** stray_away_distance
+        reward = -10000000 if reward < -10000000 else reward
         return reward
 
     def step(self, rotor_speeds):
